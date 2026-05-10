@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: cscs-example-
+  namespace: test-cscs
+spec:
+  template:
+    metadata:
+      labels:
+        app: cscs-example
+    spec:
+      containers:
+        - name: cscs-example
+          image: ghcr.io/bells17/cscs-example:v0.3.0
+      restartPolicy: Never

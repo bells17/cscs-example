@@ -4,18 +4,12 @@ metadata:
   name: image-is-signed-by-github-actions
 spec:
   images:
-    # Matches all versions of the actions-test image.
-    # NOTE: policy-controller mutates pods to use a digest even if originally
-    # specified by tag.
     - glob: "ghcr.io/bells17/cscs-example@*"
   authorities:
     - keyless:
-        # Signed by the public Fulcio certificate authority
         url: https://fulcio.sigstore.dev
         identities:
-          # Matches the Github Actions OIDC issuer
           - issuer: https://token.actions.githubusercontent.com
-            # Matches the reusable workflow's signing identity.
             subjectRegExp: "^https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v[0-9]+.[0-9]+.[0-9]+$"
       attestations:
         - name: must-have-slsa
@@ -30,7 +24,7 @@ spec:
                 invocation: {
                   configSource: {
                     entryPoint: ".github/workflows/build-and-example.yml"
-                    uri: =~"^git\\+https://github.com/bells17/cscs-example@refs/tags/v[0-9]+.[0-9]+.[0-9]+$"
+                    uri: =~"^git\\+https://github.com/wrong-org/wrong-repo@refs/tags/v[0-9]+.[0-9]+.[0-9]+$"
                   }
                 }
               }
