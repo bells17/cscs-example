@@ -57,6 +57,7 @@ jobs:
 
       - name: Sign the images with GitHub OIDC Token
         env:
+          COSIGN_EXPERIMENTAL: "1"
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
