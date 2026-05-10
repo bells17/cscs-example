@@ -4,10 +4,18 @@ metadata:
   name: image-is-signed-by-cosign
 spec:
   images:
-    - glob: "docker.io/bells17/cscs-example@*"
+    - glob: "index.docker.io/bells17/cscs-example@*"
   authorities:
     - keyless:
         url: https://fulcio.sigstore.dev
         identities:
           - issuer: https://token.actions.githubusercontent.com
             subjectRegExp: "^https://github.com/wrong-org/wrong-repo/.github/workflows/build-and-example.yml@refs/tags/v[0-9]+.[0-9]+.[0-9]+$"
+      signatureFormat: bundle
+      attestations:
+        - name: must-have-attestation
+          predicateType: https://cosign.sigstore.dev/attestation/v1
+          policy:
+            type: cue
+            data: |
+              predicateType: "https://cosign.sigstore.dev/attestation/v1"
