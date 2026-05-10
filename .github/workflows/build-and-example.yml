@@ -15,7 +15,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write
     outputs:
       image: ${{ steps.image.outputs.image }}
       digest: ${{ steps.build-and-push.outputs.digest }}
@@ -52,21 +51,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Install cosign
-        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-
-      - name: Sign the images with GitHub OIDC Token
-        env:
-          COSIGN_EXPERIMENTAL: "1"
-          DIGEST: ${{ steps.build-and-push.outputs.digest }}
-          TAGS: ${{ steps.meta.outputs.tags }}
-        run: |
-          images=""
-          for tag in ${TAGS}; do
-            images+="${tag}@${DIGEST} "
-          done
-          cosign sign --yes --registry-referrers-mode=oci-1-1 ${images}
-
       - name: Output image
         id: image
         run: |
@@ -74,6 +58,71 @@ jobs:
           # available to the inputs of a reusable workflow call.
           image_name="${IMAGE_REGISTRY}/${IMAGE_NAME}"
           echo "image=$image_name" >> "$GITHUB_OUTPUT"
+
+  # This step signs the container image with cosign keyless signing via the
+  # OCI Referrers API.
+  sign:
+    needs: [build]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate Docker
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign the images with GitHub OIDC Token
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+          IMAGE: ${{ needs.build.outputs.image }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+        run: cosign sign --yes --registry-referrers-mode=oci-1-1 "${IMAGE}@${DIGEST}"
+
+  # This step generates an SBOM and attests it to the container image via the
+  # OCI Referrers API.
+  sbom:
+    needs: [build]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate Docker
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Install syft
+        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+
+      - name: Generate SBOM
+        env:
+          IMAGE: ${{ needs.build.outputs.image }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+        run: syft "${IMAGE}@${DIGEST}" -o spdx-json > sbom.spdx.json
+
+      - name: Attest SBOM to image
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+          IMAGE: ${{ needs.build.outputs.image }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+        run: cosign attest --yes --type spdxjson --predicate sbom.spdx.json --registry-referrers-mode=oci-1-1 "${IMAGE}@${DIGEST}"
 
   # This step calls the container workflow to generate provenance and push it to
   # the container registry.
