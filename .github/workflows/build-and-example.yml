@@ -64,7 +64,7 @@ jobs:
           for tag in ${TAGS}; do
             images+="${tag}@${DIGEST} "
           done
-          cosign sign --yes ${images}
+          cosign sign --yes --registry-referrers-mode=oci-1-1 ${images}
 
       - name: Output image
         id: image
