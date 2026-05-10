@@ -11,5 +11,5 @@ spec:
     spec:
       containers:
         - name: cscs-example
-          image: ghcr.io/bells17/cscs-example:v0.3.0
+          image: docker.io/bells17/cscs-example:v0.8.0
       restartPolicy: Never

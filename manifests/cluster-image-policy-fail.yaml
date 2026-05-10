@@ -4,7 +4,7 @@ metadata:
   name: image-is-signed-by-github-actions
 spec:
   images:
-    - glob: "ghcr.io/bells17/cscs-example@*"
+    - glob: "docker.io/bells17/cscs-example@*"
   authorities:
     - keyless:
         url: https://fulcio.sigstore.dev

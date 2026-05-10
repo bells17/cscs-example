@@ -7,7 +7,7 @@ spec:
     # Matches all versions of the actions-test image.
     # NOTE: policy-controller mutates pods to use a digest even if originally
     # specified by tag.
-    - glob: "ghcr.io/bells17/cscs-example@*"
+    - glob: "docker.io/bells17/cscs-example@*"
   authorities:
     - keyless:
         # Signed by the public Fulcio certificate authority
