@@ -119,10 +119,9 @@ jobs:
 
       - name: Attest SBOM to image
         env:
-          COSIGN_EXPERIMENTAL: "1"
           IMAGE: ${{ needs.build.outputs.image }}
           DIGEST: ${{ needs.build.outputs.digest }}
-        run: cosign attest --yes --type spdxjson --predicate sbom.spdx.json --registry-referrers-mode=oci-1-1 "${IMAGE}@${DIGEST}"
+        run: cosign attest --yes --type spdxjson --predicate sbom.spdx.json "${IMAGE}@${DIGEST}"
 
   # This step calls the container workflow to generate provenance and push it to
   # the container registry.
